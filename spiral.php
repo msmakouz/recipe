@@ -56,13 +56,13 @@ desc('Reset translation cache');
 task('spiral:i18n:reset', command('i18n:reset', ['showOutput']));
 
 desc('Generate new encryption key, if it doesn\'t exist');
-task('deploy:encrypt-key', command('encrypt:key -m .env -p', ['showOutput']));
+task('spiral:encrypt-key', command('encrypt:key -m .env -p', ['showOutput']));
 
 desc('Warm-up view cache');
-task('views:compile', command('views:compile', ['showOutput']));
+task('spiral:views:compile', command('views:compile', ['showOutput']));
 
 desc('Clear view cache');
-task('views:reset', command('views:reset', ['showOutput']));
+task('spiral:views:reset', command('views:reset', ['showOutput']));
 
 /**
  * Cycle ORM, and migrations console commands
@@ -133,8 +133,8 @@ task('deploy', [
     'deploy:prepare',
     'deploy:environment',
     'deploy:vendors',
-    'deploy:encrypt-key',
-    'deploy:configure',
+    'spiral:encrypt-key',
+    'spiral:configure',
     'deploy:roadrunner',
     'deploy:publish',
     'deploy:serve'
