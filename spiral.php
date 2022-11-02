@@ -34,11 +34,59 @@ function command(string $command, array $options = []): \Closure
     };
 }
 
+/**
+ * Spiral Framework console commands
+ */
+desc('Configure project');
+task('spiral:configure', command('configure', ['showOutput']));
+
+desc('Update (init) cycle schema from database and annotated classes');
+task('spiral:cycle', command('cycle', ['showOutput']));
+
+desc('Perform all outstanding migrations');
+task('spiral:migrate', command('migrate', ['showOutput']));
+
+desc('Update project state');
+task('spiral:update', command('update', ['showOutput']));
+
+desc('Clean application runtime cache');
+task('spiral:cache:clean', command('cache:clean', ['showOutput']));
+
+desc('Reset translation cache');
+task('spiral:i18n:reset', command('i18n:reset', ['showOutput']));
+
 desc('Generate new encryption key, if it doesn\'t exist');
 task('deploy:encrypt-key', command('encrypt:key -m .env -p', ['showOutput']));
 
-desc('Warmup cache, configure permissions');
-task('deploy:configure', command('configure', ['showOutput']));
+desc('Warm-up view cache');
+task('views:compile', command('views:compile', ['showOutput']));
+
+desc('Clear view cache');
+task('views:reset', command('views:reset', ['showOutput']));
+
+/**
+ * Cycle ORM, and migrations console commands
+ */
+desc('Generate ORM schema migrations');
+task('cycle:migrate', command('cycle:migrate', ['showOutput']));
+
+desc('Render available CycleORM schemas');
+task('cycle:render', command('cycle:render', ['showOutput']));
+
+desc('Sync Cycle ORM schema with database without intermediate migration (risk operation)');
+task('cycle:sync', command('cycle:sync', ['showOutput']));
+
+desc('Init migrations component (create migrations table)');
+task('migrate:init', command('migrate:init', ['showOutput']));
+
+desc('Replay (down, up) one or multiple migrations');
+task('migrate:replay', command('migrate:replay', ['showOutput']));
+
+desc('Rollback one (default) or multiple migrations');
+task('migrate:rollback', command('migrate:rollback', ['showOutput']));
+
+desc('Get list of all available migrations and their statuses');
+task('migrate:status', command('migrate:status', ['showOutput']));
 
 /**
  * Run a RoadRunner console command.
