@@ -2,6 +2,8 @@
 
 namespace Deployer;
 
+use Symfony\Component\Process\Process;
+
 require_once __DIR__ . '/common.php';
 
 add('recipes', ['spiral']);
@@ -11,6 +13,9 @@ set('shared_dirs', ['runtime']);
 
 // Spiral writable dirs
 set('writable_dirs', ['runtime', 'public']);
+
+// Path to the RoadRunner server
+set('roadrunner_path', '{{release_or_current_path}}');
 
 desc('Create .env file if it doesn\'t exist');
 task('deploy:environment', function (): void {
@@ -65,7 +70,7 @@ desc('Clear view cache');
 task('spiral:views:reset', command('views:reset', ['showOutput']));
 
 /**
- * Cycle ORM, and migrations console commands
+ * Cycle ORM and migrations console commands
  */
 desc('Generate ORM schema migrations');
 task('cycle:migrate', command('cycle:migrate', ['showOutput']));
@@ -88,31 +93,21 @@ task('migrate:rollback', command('migrate:rollback', ['showOutput']));
 desc('Get list of all available migrations and their statuses');
 task('migrate:status', command('migrate:status', ['showOutput']));
 
+
 /**
- * Run a RoadRunner console command.
- *
- * Supported options:
- * - 'showOutput': Show the output of the command if given.
+ * Download and restart RoadRunner
  */
-function rrCommand(string $command, array $options = []): \Closure
-{
-    return function () use ($command, $options): void {
-        $output = run("cd {{release_or_current_path}} && {{bin/php}} ./vendor/bin/rr $command");
-
-        if (\in_array('showOutput', $options, true)) {
-            writeln("<info>$output</info>");
-        }
-    };
-}
-
 desc('Download RoadRunner');
-task('deploy:roadrunner', rrCommand('get-binary', ['showOutput']));
+task('deploy:download-rr', function (): void {
+    $output = run("cd {{release_or_current_path}} && {{bin/php}} ./vendor/bin/rr get-binary -l {{roadrunner_path}}");
+    writeln("<info>$output</info>");
+});
 
 desc('Restart RoadRunner');
-task('deploy:serve', function (): void {
+task('deploy:restart-rr', function (): void {
     // TODO pay attention on master process
     try {
-        run('cd {{release_or_current_path}} && ./rr reset --silent');
+        run('cd {{roadrunner_path}} && ./rr reset --silent');
         writeln("<info>Roadrunner successfully restarted.</info>");
     } catch (\Throwable $e) {
         writeln("<info>Roadrunner successfully started.</info>");
@@ -120,7 +115,7 @@ task('deploy:serve', function (): void {
         $process->setOptions(['create_new_console' => true]);
         $process->setTimeout(null);
         $process->setIdleTimeout(null);
-        $process->setWorkingDirectory(parse('{{release_or_current_path}}'));
+        $process->setWorkingDirectory(parse('{{roadrunner_path}}'));
         $process->start();
     }
 });
@@ -135,7 +130,7 @@ task('deploy', [
     'deploy:vendors',
     'spiral:encrypt-key',
     'spiral:configure',
-    'deploy:roadrunner',
+    'deploy:download-rr',
     'deploy:publish',
-    'deploy:serve'
+    'deploy:restart-rr'
 ]);
