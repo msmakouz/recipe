@@ -40,6 +40,23 @@ function command(string $command, array $options = []): \Closure
 }
 
 /**
+ * Run a RoadRunner command.
+ *
+ * Supported options:
+ * - 'showOutput': Show the output of the command if given.
+ */
+function rr(string $command, array $options = []): \Closure
+{
+    return function () use ($command, $options): void {
+        $output = run("cd {{roadrunner_path}} && ./rr $command");
+
+        if (\in_array('showOutput', $options, true)) {
+            writeln("<info>$output</info>");
+        }
+    };
+}
+
+/**
  * Spiral Framework console commands
  */
 desc('Configure project');
@@ -95,6 +112,24 @@ task('migrate:status', command('migrate:status', ['showOutput']));
 
 
 /**
+ * RoadRunner console commands
+ */
+desc('Start RoadRunner server');
+task('roadrunner:serve', function (): void {
+    runAsync(['./rr', 'serve'], function ($type, $output): bool {
+        writeln("<info>" . $output . "</info>");
+
+        return str_contains($output, 'RoadRunner server started');
+    }, parse('{{roadrunner_path}}'));
+});
+
+desc('Stop RoadRunner server');
+task('roadrunner:stop', rr('stop'));
+
+desc('Reset workers of all or specific RoadRunner service');
+task('roadrunner:reset', rr('reset'));
+
+/**
  * Download and restart RoadRunner
  */
 desc('Download RoadRunner');
@@ -103,20 +138,29 @@ task('deploy:download-rr', function (): void {
     writeln("<info>$output</info>");
 });
 
+function runAsync(array $command, callable $waitUntil, string $workingDir = null): void
+{
+    $process = new AsyncProcess($command);
+    $process->setOptions(['create_new_console' => true]);
+    $process->setTimeout(null);
+    $process->setIdleTimeout(null);
+    if ($workingDir !== null) {
+        $process->setWorkingDirectory($workingDir);
+    }
+    $process->start();
+
+    $process->waitUntil($waitUntil);
+}
+
 desc('Restart RoadRunner');
 task('deploy:restart-rr', function (): void {
     // TODO pay attention on master process
     try {
-        run('cd {{roadrunner_path}} && ./rr reset --silent');
+        invoke('roadrunner:reset');
         writeln("<info>Roadrunner successfully restarted.</info>");
     } catch (\Throwable $e) {
+        invoke('roadrunner:serve');
         writeln("<info>Roadrunner successfully started.</info>");
-        $process = new Process(['./rr', 'serve']);
-        $process->setOptions(['create_new_console' => true]);
-        $process->setTimeout(null);
-        $process->setIdleTimeout(null);
-        $process->setWorkingDirectory(parse('{{roadrunner_path}}'));
-        $process->start();
     }
 });
 
@@ -134,3 +178,10 @@ task('deploy', [
     'deploy:publish',
     'deploy:restart-rr'
 ]);
+
+class AsyncProcess extends Process
+{
+    public function __destruct()
+    {
+    }
+}
