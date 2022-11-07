@@ -119,7 +119,7 @@ task('roadrunner:serve', function (): void {
 desc('Stop RoadRunner server');
 task('roadrunner:stop', rr('stop', ['showOutput']));
 
-desc('Reset workers of all or specific RoadRunner service');
+desc('Reset workers of all services');
 task('roadrunner:reset', rr('reset', ['showOutput']));
 
 /**
