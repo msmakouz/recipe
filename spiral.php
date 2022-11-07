@@ -2,8 +2,6 @@
 
 namespace Deployer;
 
-use Symfony\Component\Process\Process;
-
 require_once __DIR__ . '/common.php';
 
 add('recipes', ['spiral']);
@@ -110,24 +108,19 @@ task('migrate:rollback', command('migrate:rollback', ['showOutput']));
 desc('Get list of all available migrations and their statuses');
 task('migrate:status', command('migrate:status', ['showOutput']));
 
-
 /**
  * RoadRunner console commands
  */
 desc('Start RoadRunner server');
 task('roadrunner:serve', function (): void {
-    runAsync(['./rr', 'serve'], function ($type, $output): bool {
-        writeln("<info>" . $output . "</info>");
-
-        return str_contains($output, 'RoadRunner server started');
-    }, parse('{{roadrunner_path}}'));
+    exec(parse('cd {{roadrunner_path}} && ./rr serve -p > /dev/null 2>&1 &'));
 });
 
 desc('Stop RoadRunner server');
-task('roadrunner:stop', rr('stop'));
+task('roadrunner:stop', rr('stop', ['showOutput']));
 
 desc('Reset workers of all or specific RoadRunner service');
-task('roadrunner:reset', rr('reset'));
+task('roadrunner:reset', rr('reset', ['showOutput']));
 
 /**
  * Download and restart RoadRunner
@@ -137,20 +130,6 @@ task('deploy:download-rr', function (): void {
     $output = run("cd {{release_or_current_path}} && {{bin/php}} ./vendor/bin/rr get-binary -l {{roadrunner_path}}");
     writeln("<info>$output</info>");
 });
-
-function runAsync(array $command, callable $waitUntil, string $workingDir = null): void
-{
-    $process = new AsyncProcess($command);
-    $process->setOptions(['create_new_console' => true]);
-    $process->setTimeout(null);
-    $process->setIdleTimeout(null);
-    if ($workingDir !== null) {
-        $process->setWorkingDirectory($workingDir);
-    }
-    $process->start();
-
-    $process->waitUntil($waitUntil);
-}
 
 desc('Restart RoadRunner');
 task('deploy:restart-rr', function (): void {
@@ -178,10 +157,3 @@ task('deploy', [
     'deploy:publish',
     'deploy:restart-rr'
 ]);
-
-class AsyncProcess extends Process
-{
-    public function __destruct()
-    {
-    }
-}
